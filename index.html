@@ -122,6 +122,44 @@
     }
     const hero = document.querySelector(".luxury-hero");
     if (hero) new LuxuryHeroMotion(hero);
-  </script>
+<script>
+  const stripe = Stripe("pk_test_YOUR_PUBLISHABLE_KEY");
+  const isDev = location.hostname === "localhost";
+  const urlPaid = new URLSearchParams(location.search).get("paid") === "true";
+  if (urlPaid) localStorage.setItem("geniq-paid", "true");
+  const gotPaid = isDev || urlPaid || localStorage.getItem("geniq-paid") === "true";
+  if (gotPaid) {
+    document.getElementById("paymentSection").hidden = true;
+    document.getElementById("app").hidden = false;
+  }
+
+  document.getElementById("checkoutBtn").onclick = async () => {
+    const { sessionId } = await (
+      await fetch("/.netlify/functions/create-checkout-session", { method: "POST" })
+    ).json();
+    stripe.redirectToCheckout({ sessionId });
+  };
+
+  document.getElementById("generateBtn").onclick = async () => {
+    document.getElementById("loading").hidden = false;
+    document.getElementById("result").classList.remove("visible");
+    const res = await fetch("/.netlify/functions/generateIdea", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: document.getElementById("promptInput").value })
+    });
+    const data = await res.json();
+    document.getElementById("loading").hidden = true;
+    document.getElementById("result").textContent = data.choices?.[0]?.text || data.error;
+    document.getElementById("result").classList.add("visible");
+    document.getElementById("newBtn").hidden = false;
+  };
+
+  document.getElementById("newBtn").onclick = () => {
+    document.getElementById("promptInput").value = "";
+    document.getElementById("result").classList.remove("visible");
+    document.getElementById("newBtn").hidden = true;
+  };
+</script>
 </body>
 </html>
