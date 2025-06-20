@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Business Idea Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen">
+  <div class="max-w-4xl mx-auto py-10 px-4">
+    <div class="bg-white shadow-lg rounded-lg p-8 space-y-6">
+      <h1 class="text-4xl font-semibold text-[#00A3D5]">Business Idea Generator</h1>
+      <p class="text-gray-600">Turn your interests into profitable hustles</p>
+      <button id="checkoutBtn" class="bg-[#00A3D5] text-white font-medium px-6 py-2 rounded-md hover:bg-[#008bb0] transition">Purchase for $5</button>
+    </div>
+    <div id="app" class="mt-8 bg-white shadow-lg rounded-lg p-8 space-y-6">
+      <form id="ideaForm" class="space-y-4">
+        <textarea id="promptInput" class="w-full border border-gray-300 rounded-md p-3" rows="4" placeholder="Describe your interests..."></textarea>
+        <button type="submit" class="bg-[#00A3D5] text-white font-medium px-6 py-2 rounded-md hover:bg-[#008bb0] transition">Generate Idea</button>
+      </form>
+      <div id="loadingContainer" class="hidden text-center text-gray-500">Generating idea...</div>
+      <div id="finalIdeaContainer" class="hidden">
+        <div id="finalIdea" class="prose prose-blue"></div>
+        <button id="newIdeaBtn" class="mt-4 bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 transition">New Idea</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    const stripe = Stripe("pk_test_YOUR_PUBLISHABLE_KEY"); // Replace with your publishable key
+    document.getElementById("checkoutBtn").addEventListener("click", async () => {
+      const res = await fetch("/.netlify/functions/create-checkout-session", { method: "POST" });
+      const { sessionId } = await res.json();
+      stripe.redirectToCheckout({ sessionId });
+    });
+    document.getElementById('ideaForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      document.getElementById('loadingContainer').classList.remove('hidden');
+      document.getElementById('finalIdeaContainer').classList.add('hidden');
+      const prompt = document.getElementById('promptInput').value;
+      const res = await fetch('/.netlify/functions/generateIdea', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+      const data = await res.json();
+      const text = data.choices?.[0]?.text || data.error || "Error generating idea.";
+      document.getElementById('loadingContainer').classList.add('hidden');
+      document.getElementById('finalIdeaContainer').classList.remove('hidden');
+      document.getElementById('finalIdea').innerHTML = marked.parse(text);
+    });
+    document.getElementById('newIdeaBtn').addEventListener('click', () => {
+      document.getElementById('finalIdeaContainer').classList.add('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  </script>
+</body>
+</html>
