@@ -1,60 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-   <title>GenIQ</title>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet"/>
+  <title>GenIQ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap" rel="stylesheet"/>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://js.stripe.com/v3/"></script>
+
+  <!-- Visual-effect styles -->
+  <style>
+    /* Parallax hero wrapper */  
+    .luxury-hero {
+      min-height: 50vh;
+      background: linear-gradient(120deg, #202136 0%, #2327b1 100%);
+      background-position: center center;
+      background-size: cover;
+      border-radius: 1.5rem;
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(40,40,100,0.19);
+      transition: background-position 0.2s ease-out;
+    }
+
+    /* Fade-in result */
+    #result {
+      opacity: 0;
+      transition: opacity 0.32s cubic-bezier(.62,1.2,.64,1);
+    }
+    #result.visible {
+      opacity: 1;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 font-sans min-h-screen">
-  <div class="max-w-4xl mx-auto py-10 px-4">
-    <div class="bg-white shadow-lg rounded-lg p-8 space-y-6">
-      <h1 class="text-4xl font-semibold text-[#00A3D5]">GenIQ</h1>
-      <p class="text-gray-600">Turn your interests into profitable hustles</p>
-      <button id="checkoutBtn" class="bg-[#00A3D5] text-white font-medium px-6 py-2 rounded-md hover:bg-[#008bb0] transition">Purchase for $5</button>
+<body class="bg-gray-50 font-sans flex items-center justify-center">
+
+  <!-- Hero wrapper with parallax -->
+  <div class="luxury-hero w-full max-w-3xl mx-auto p-6">
+
+    <!-- Purchase Button -->
+    <div id="paymentSection" class="bg-white shadow-lg rounded-xl p-8 text-center">
+      <h1 class="font-serif text-3xl mb-4 text-gray-900">GenIQ</h1>
+      <button id="checkoutBtn"
+              class="bg-blue-600 text-white px-6 py-3 rounded-full transform transition hover:-translate-y-1 hover:shadow-xl">
+        Purchase for $5
+      </button>
     </div>
-    <div id="app" class="mt-8 bg-white shadow-lg rounded-lg p-8 space-y-6">
-      <form id="ideaForm" class="space-y-4">
-        <textarea id="promptInput" class="w-full border border-gray-300 rounded-md p-3" rows="4" placeholder="Describe your interests..."></textarea>
-        <button type="submit" class="bg-[#00A3D5] text-white font-medium px-6 py-2 rounded-md hover:bg-[#008bb0] transition">Generate Idea</button>
-      </form>
-      <div id="loadingContainer" class="hidden text-center text-gray-500">Generating idea...</div>
-      <div id="finalIdeaContainer" class="hidden">
-        <div id="finalIdea" class="prose prose-blue"></div>
-        <button id="newIdeaBtn" class="mt-4 bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 transition">New Idea</button>
-      </div>
+
+    <!-- App (hidden until paid/dev) -->
+    <div id="app" class="hidden bg-white shadow-lg rounded-xl p-8 space-y-4 mt-8">
+      <textarea id="promptInput"
+                class="w-full border rounded-xl p-4"
+                rows="4"
+                placeholder="Describe your interests…"></textarea>
+      <button id="generateBtn"
+              class="w-full bg-green-600 text-white py-3 rounded-full transform transition hover:-translate-y-1 hover:shadow-xl">
+        Generate Ideas
+      </button>
+      <div id="loading" class="hidden text-center text-gray-500">Generating…</div>
+      <div id="result" class="prose prose-green"></div>
+      <button id="newBtn"
+              class="hidden mt-4 bg-gray-200 px-6 py-2 rounded-full transform transition hover:-translate-y-1 hover:shadow-xl">
+        New Session
+      </button>
     </div>
+
   </div>
+
   <script>
-    const stripe = Stripe("pk_test_YOUR_PUBLISHABLE_KEY"); // Replace with your publishable key
-    document.getElementById("checkoutBtn").addEventListener("click", async () => {
+    // Stripe + payment gate
+    const stripe = Stripe("pk_test_YOUR_PUBLISHABLE_KEY");
+    const isDev = location.hostname === "localhost";
+    const isPaid = new URLSearchParams(location.search).get("paid") === "true";
+    if (isDev || isPaid) {
+      paymentSection.classList.add("hidden");
+      app.classList.remove("hidden");
+    }
+
+    checkoutBtn.addEventListener("click", async () => {
       const res = await fetch("/.netlify/functions/create-checkout-session", { method: "POST" });
       const { sessionId } = await res.json();
       stripe.redirectToCheckout({ sessionId });
     });
-    document.getElementById('ideaForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      document.getElementById('loadingContainer').classList.remove('hidden');
-      document.getElementById('finalIdeaContainer').classList.add('hidden');
-      const prompt = document.getElementById('promptInput').value;
-      const res = await fetch('/.netlify/functions/generateIdea', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt })
+
+    // GenIQ fetch + fade-in
+    generateBtn.addEventListener("click", async () => {
+      loading.classList.remove("hidden");
+      result.classList.remove("visible");
+      const res = await fetch("/.netlify/functions/generateIdea", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: promptInput.value })
       });
       const data = await res.json();
-      const text = data.choices?.[0]?.text || data.error || "Error generating idea.";
-      document.getElementById('loadingContainer').classList.add('hidden');
-      document.getElementById('finalIdeaContainer').classList.remove('hidden');
-      document.getElementById('finalIdea').innerHTML = marked.parse(text);
+      loading.classList.add("hidden");
+      result.textContent = data.choices?.[0]?.text || data.error;
+      result.classList.add("visible");
+      newBtn.classList.remove("hidden");
     });
-    document.getElementById('newIdeaBtn').addEventListener('click', () => {
-      document.getElementById('finalIdeaContainer').classList.add('hidden');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    newBtn.addEventListener("click", () => {
+      promptInput.value = "";
+      result.classList.remove("visible");
+      newBtn.classList.add("hidden");
     });
+
+    // Parallax background on scroll + hover
+    class LuxuryHeroMotion {
+      constructor(hero) {
+        this.hero = hero;
+        window.addEventListener("scroll", this.onScroll.bind(this));
+        hero.addEventListener("mousemove", this.onHover.bind(this));
+      }
+      onScroll() {
+        const y = window.scrollY;
+        this.hero.style.backgroundPosition = `center ${-y/8}px`;
+      }
+      onHover(e) {
+        const x = e.clientX / this.hero.offsetWidth;
+        this.hero.style.background = `linear-gradient(${110 + x*20}deg, #202136 0%, #2327b1 100%)`;
+      }
+    }
+    const hero = document.querySelector(".luxury-hero");
+    if (hero) new LuxuryHeroMotion(hero);
   </script>
 </body>
 </html>
