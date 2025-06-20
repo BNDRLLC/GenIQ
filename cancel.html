@@ -1,17 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Payment Canceled</title>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet"/>
+  <title>GenIQ – Payment Canceled</title>
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap" rel="stylesheet"/>
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    .luxury-hero {
+      min-height: 60vh;
+      background: linear-gradient(125deg, #202136 0%, #2327b1 100%);
+      background-size: cover;
+      background-position: center;
+      border-radius: 1.5rem;
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(40,40,100,0.19);
+      transition: background-position 0.2s ease-out;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 font-sans min-h-screen flex items-center justify-center">
-  <div class="bg-white shadow-lg rounded-lg p-8 text-center max-w-md">
-    <h1 class="text-3xl font-semibold text-red-600 mb-4">Payment Canceled</h1>
-    <p class="text-gray-600">Your payment was canceled. You can try again below.</p>
-    <a href="/" class="mt-6 inline-block bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 transition">Return</a>
+<body class="bg-gray-50 font-sans flex items-center justify-center min-h-screen">
+  <div class="luxury-hero w-full max-w-xl mx-auto p-8 flex items-center justify-center">
+    <div class="text-center bg-white/80 backdrop-blur rounded-2xl p-6 space-y-4">
+      <h1 class="font-serif text-3xl text-red-600">Payment Canceled</h1>
+      <p class="text-gray-600">Your payment didn’t go through. Try again below.</p>
+      <a href="/"
+         class="inline-block bg-red-600 text-white px-6 py-3 rounded-full transform transition hover:-translate-y-1 hover:shadow-xl">
+        Return
+      </a>
+    </div>
   </div>
+
+  <script>
+    const hero = document.querySelector('.luxury-hero');
+    window.addEventListener('scroll', ()=> {
+      const y = window.scrollY;
+      hero.style.backgroundPosition = `center ${-y/8}px`;
+    });
+  </script>
 </body>
 </html>
