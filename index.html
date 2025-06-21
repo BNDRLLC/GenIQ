@@ -6,14 +6,12 @@
   <title>GenIQ</title>
   <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap" rel="stylesheet"/>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://js.stripe.com/v3/"></script>
-
-  <!-- Visual-effect styles -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
-    /* Parallax hero wrapper */  
+    /* Parallax hero */
     .luxury-hero {
       min-height: 50vh;
-      background: linear-gradient(120deg, #202136 0%, #2327b1 100%);
+      background: linear-gradient(120deg,#202136 0%,#2327b1 100%);
       background-position: center center;
       background-size: cover;
       border-radius: 1.5rem;
@@ -21,98 +19,76 @@
       box-shadow: 0 24px 80px rgba(40,40,100,0.19);
       transition: background-position 0.2s ease-out;
     }
-
     /* Fade-in result */
-    #result {
-      opacity: 0;
-      transition: opacity 0.32s cubic-bezier(.62,1.2,.64,1);
-    }
-    #result.visible {
-      opacity: 1;
-    }
+    #result { opacity: 0; transition: opacity 0.32s cubic-bezier(.62,1.2,.64,1); }
+    #result.visible { opacity: 1; }
   </style>
 </head>
-<body class="bg-gray-50 font-sans flex items-center justify-center">
-<script>
-  if (new URLSearchParams(window.location.search).get('paid') === 'true') {
-    document.getElementById('paymentSection').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-  }
-</script>
-  <!-- Hero wrapper with parallax -->
+<body class="bg-gray-50 font-sans flex items-center justify-center min-h-screen">
   <div class="luxury-hero w-full max-w-3xl mx-auto p-6">
+    <!-- 10-Step Reasoning -->
+    <section class="bg-white/80 backdrop-blur rounded-2xl p-6 mb-8">
+      <h2 class="font-serif text-2xl mb-4">10-Step Reasoning Process</h2>
+      <ol class="list-decimal list-inside space-y-2 text-gray-700">
+        <li>Interest Analysis</li>
+        <li>Market Research</li>
+        <li>Feasibility Assessment</li>
+        <li>Revenue Modeling</li>
+        <li>Skill Mapping</li>
+        <li>Resource Planning</li>
+        <li>Risk Evaluation</li>
+        <li>Prototype Strategy</li>
+        <li>Validation Plan</li>
+        <li>Action Plan Development</li>
+      </ol>
+    </section>
 
-    <!-- Purchase Button -->
-    <div id="paymentSection" class="bg-white shadow-lg rounded-xl p-8 text-center">
-      <h1 class="font-serif text-3xl mb-4 text-gray-900">GenIQ</h1>
-      <a
-  href="https://buy.stripe.com/14A9ATeqK8Ve0Uv1Sp5J603"
-  target="_blank" rel="noopener"
-  class="bg-blue-600 text-white px-6 py-3 rounded-full inline-block hover:opacity-90 transition"
->
-  Purchase for $7
-</a>
-    </div>
-
-    <!-- App (hidden until paid/dev) -->
-    <div id="app" class="hidden bg-white shadow-lg rounded-xl p-8 space-y-4 mt-8">
-      <textarea id="promptInput"
-                class="w-full border rounded-xl p-4"
-                rows="4"
+    <!-- Main App UI -->
+    <div id="app" class="bg-white shadow-lg rounded-2xl p-8 space-y-6">
+      <h1 class="font-serif text-4xl text-gray-900">GenIQ</h1>
+      <p class="text-gray-600">Enter your interests and hit “Generate” to get a tailored business idea.</p>
+      <textarea id="promptInput" class="w-full border border-gray-300 rounded-xl p-4" rows="4"
                 placeholder="Describe your interests…"></textarea>
       <button id="generateBtn"
-              class="w-full bg-green-600 text-white py-3 rounded-full transform transition hover:-translate-y-1 hover:shadow-xl">
+              class="w-full bg-green-600 text-white py-3 rounded-full font-medium hover:bg-green-700 transition">
         Generate Ideas
       </button>
       <div id="loading" class="hidden text-center text-gray-500">Generating…</div>
       <div id="result" class="prose prose-green"></div>
-      <button id="newBtn"
-              class="hidden mt-4 bg-gray-200 px-6 py-2 rounded-full transform transition hover:-translate-y-1 hover:shadow-xl">
+      <button id="newBtn" class="hidden block mx-auto mt-6 bg-gray-200 text-gray-700 px-6 py-2 rounded-full">
         New Session
       </button>
     </div>
-
   </div>
 
   <script>
-    // Stripe + payment gate
-    const stripe = Stripe("pk_test_YOUR_PUBLISHABLE_KEY");
-    const isDev = location.hostname === "localhost";
-    const isPaid = new URLSearchParams(location.search).get("paid") === "true";
-    if (isDev || isPaid) {
-      paymentSection.classList.add("hidden");
-      app.classList.remove("hidden");
-    }
-
-    checkoutBtn.addEventListener("click", async () => {
-      const res = await fetch("/.netlify/functions/create-checkout-session", { method: "POST" });
-      const { sessionId } = await res.json();
-      stripe.redirectToCheckout({ sessionId });
-    });
-
-    // GenIQ fetch + fade-in
-    generateBtn.addEventListener("click", async () => {
+    // Fetch and render ideas
+    document.getElementById("generateBtn").onclick = async () => {
+      const loading = document.getElementById("loading");
+      const result  = document.getElementById("result");
+      const newBtn  = document.getElementById("newBtn");
       loading.classList.remove("hidden");
       result.classList.remove("visible");
+      const prompt = document.getElementById("promptInput").value;
       const res = await fetch("/.netlify/functions/generateIdea", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: promptInput.value })
+        body: JSON.stringify({ prompt })
       });
       const data = await res.json();
       loading.classList.add("hidden");
-      result.textContent = data.choices?.[0]?.text || data.error;
+      result.textContent = data.choices?.[0]?.text || data.error || "Error generating idea.";
       result.classList.add("visible");
       newBtn.classList.remove("hidden");
-    });
+    };
 
-    newBtn.addEventListener("click", () => {
-      promptInput.value = "";
-      result.classList.remove("visible");
-      newBtn.classList.add("hidden");
-    });
+    document.getElementById("newBtn").onclick = () => {
+      document.getElementById("promptInput").value = "";
+      document.getElementById("result").classList.remove("visible");
+      document.getElementById("newBtn").classList.add("hidden");
+    };
 
-    // Parallax background on scroll + hover
+    // Parallax background
     class LuxuryHeroMotion {
       constructor(hero) {
         this.hero = hero;
@@ -120,54 +96,15 @@
         hero.addEventListener("mousemove", this.onHover.bind(this));
       }
       onScroll() {
-        const y = window.scrollY;
-        this.hero.style.backgroundPosition = `center ${-y/8}px`;
+        this.hero.style.backgroundPosition = `center ${-window.scrollY/8}px`;
       }
       onHover(e) {
-        const x = e.clientX / this.hero.offsetWidth;
-        this.hero.style.background = `linear-gradient(${110 + x*20}deg, #202136 0%, #2327b1 100%)`;
+        const x = e.clientX/this.hero.offsetWidth;
+        this.hero.style.background = `linear-gradient(${110 + x*20}deg,#202136 0%,#2327b1 100%)`;
       }
     }
     const hero = document.querySelector(".luxury-hero");
     if (hero) new LuxuryHeroMotion(hero);
-<script>
-  const stripe = Stripe("pk_test_YOUR_PUBLISHABLE_KEY");
-  const isDev = location.hostname === "localhost";
-  const urlPaid = new URLSearchParams(location.search).get("paid") === "true";
-  if (urlPaid) localStorage.setItem("geniq-paid", "true");
-  const gotPaid = isDev || urlPaid || localStorage.getItem("geniq-paid") === "true";
-  if (gotPaid) {
-    document.getElementById("paymentSection").hidden = true;
-    document.getElementById("app").hidden = false;
-  }
-
-  document.getElementById("checkoutBtn").onclick = async () => {
-    const { sessionId } = await (
-      await fetch("/.netlify/functions/create-checkout-session", { method: "POST" })
-    ).json();
-    stripe.redirectToCheckout({ sessionId });
-  };
-
-  document.getElementById("generateBtn").onclick = async () => {
-    document.getElementById("loading").hidden = false;
-    document.getElementById("result").classList.remove("visible");
-    const res = await fetch("/.netlify/functions/generateIdea", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: document.getElementById("promptInput").value })
-    });
-    const data = await res.json();
-    document.getElementById("loading").hidden = true;
-    document.getElementById("result").textContent = data.choices?.[0]?.text || data.error;
-    document.getElementById("result").classList.add("visible");
-    document.getElementById("newBtn").hidden = false;
-  };
-
-  document.getElementById("newBtn").onclick = () => {
-    document.getElementById("promptInput").value = "";
-    document.getElementById("result").classList.remove("visible");
-    document.getElementById("newBtn").hidden = true;
-  };
-</script>
+  </script>
 </body>
 </html>
