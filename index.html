@@ -33,7 +33,12 @@
   </style>
 </head>
 <body class="bg-gray-50 font-sans flex items-center justify-center">
-
+<script>
+  if (new URLSearchParams(window.location.search).get('paid') === 'true') {
+    document.getElementById('paymentSection').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  }
+</script>
   <!-- Hero wrapper with parallax -->
   <div class="luxury-hero w-full max-w-3xl mx-auto p-6">
 
